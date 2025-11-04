@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vocabulary SPA — Combined</title>
+  <style>
+    :root{
+      --accent:#2b6cb0; --bg:#fafafa; --card:#fff; --muted:#666;
+      --maxw:1100px;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);margin:0;color:#111}
+    .wrap{max-width:var(--maxw);margin:18px auto;padding:18px}
+    header{display:flex;align-items:center;gap:12px}
+    header h1{font-size:20px;margin:0}
+    .layout{display:flex;gap:18px;margin-top:14px}
+    nav{width:220px;flex-shrink:0;background:var(--card);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(20,20,40,0.04)}
+    nav button{display:block;width:100%;text-align:left;padding:10px;border:0;background:transparent;border-radius:6px;cursor:pointer;font-size:14px}
+    nav button.active{background:linear-gradient(90deg,var(--accent),#4da0ff);color:white}
+    nav .small{font-size:12px;color:var(--muted);margin-top:8px}
+    main{flex:1;background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,20,40,0.04);min-height:480px}
+    section{display:none}
+    section.active{display:block}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    .btn{padding:8px 10px;border-radius:8px;border:1px solid #eee;background:transparent;cursor:pointer}
+    .search{flex:1;min-width:180px;padding:8px;border-radius:8px;border:1px solid #ddd}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border:1px solid #e7e7e7;text-align:left;font-size:14px}
+    thead th{background:#f7f9fc}
+    ul.word-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+    .card{background:#fff;padding:10px;border-radius:8px;border:1px solid #f0f0f0;display:flex;gap:8px;align-items:center}
+    .sound{cursor:pointer;border:0;background:transparent;font-size:16px}
+    .muted{color:var(--muted);font-style:italic}
+    .page-select{padding:6px;border-radius:6px;border:1px solid #ddd}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    @media (max-width:880px){
+      .layout{flex-direction:column}
+      nav{width:100%;display:flex;overflow:auto;flex-wrap:wrap}
+      nav button{width:auto;margin-right:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Vocabulary — Single Page App</h1>
+      <div style="margin-left:auto" class="muted">Combined from your 5 pages</div>
+    </header>
+
+    <div class="layout">
+      <nav aria-label="Sections">
+        <button data-view="dwords" class="active">D-words (125)</button>
+        <button data-view="meaning_p">Same meaning — starts with P</button>
+        <button data-view="opposite_g">Opposites — starts with G</button>
+        <button data-view="vocabulary_pron">Pronunciation List (1–60)</button>
+        <button data-view="same_and_opp">Same & Opposite Table</button>
+        <div class="small">Tip: use the browser address bar hash (#dwords, #meaning_p, etc.) to open a section directly.</div>
+      </nav>
+
+      <main>
+        <!-- D-words section (keeps original functionality) -->
+        <section id="dwords" class="active" aria-labelledby="dwordsTitle">
+          <div class="controls">
+            <button class="btn" id="prevBtn">◀ Previous</button>
+            <select id="pageSelect" class="page-select"></select>
+            <button class="btn" id="nextBtn">Next ▶</button>
+            <span id="pageLabel" class="muted" style="margin-left:8px"></span>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button id="playAll" class="btn">🔁 Play all</button>
+              <button id="stopAll" class="btn">◼ Stop</button>
+            </div>
+          </div>
+          <h2 id="dwordsTitle">125 English words starting with "D"</h2>
+          <p class="muted">Click 🔊 to hear pronunciation. Navigation splits list into chunks.</p>
+          <ul id="wordList" class="word-grid" aria-live="polite"></ul>
+        </section>
+
+        <!-- meaning_start_with_p (table) -->
+        <section id="meaning_p" aria-labelledby="meaningPTitle">
+          <h2 id="meaningPTitle">Words & Same-meaning words starting with P</h2>
+          <div class="controls">
+            <input type="text" placeholder="Search table..." id="searchP" class="search" />
+          </div>
+          <div style="overflow:auto">
+            <table id="tableP" border="0">
+              <thead>
+                <tr><th>Word (A)</th><th>Meaning (Simple)</th><th>Word (B) - Starts with P (Same Meaning)</th><th>Similar Meaning</th></tr>
+              </thead>
+              <tbody>
+                <!-- rows will be injected -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- opposite_meaning_start_with_G_letter -->
+        <section id="opposite_g" aria-labelledby="oppGTitle">
+          <h2 id="oppGTitle">Opposite / Contrast words starting with G</h2>
+          <div class="controls">
+            <input type="text" id="searchG" placeholder="Search opposites..." class="search" />
+          </div>
+          <div style="overflow:auto">
+            <table id="tableG">
+              <thead>
+                <tr><th>Word (A)</th><th>Meaning (Simple)</th><th>Word (B) - Starts with G (Opposite)</th><th>Similar Meaning</th></tr>
+              </thead>
+              <tbody>
+                <!-- injected -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- vocabulary_pronunciation (list with audio) -->
+        <section id="vocabulary_pron" aria-labelledby="vocabTitle">
+          <h2 id="vocabTitle">Vocabulary Pronunciation Practice (1–60)</h2>
+          <p class="muted">Click the 🔊 icon to hear pronunciation (uses audio URLs).</p>
+          <ol id="pronList" style="margin-top:12px"></ol>
+        </section>
+
+        <!-- Same_meaningAndOpposite table -->
+        <section id="same_and_opp" aria-labelledby="sameOppTitle">
+          <h2 id="sameOppTitle">Same meaning and Opposite table</h2>
+          <div class="controls">
+            <input type="text" id="searchS" placeholder="Search..." class="search" />
+          </div>
+          <div style="overflow:auto">
+            <table id="tableS">
+              <thead><tr><th>Word</th><th>Meaning (Simple)</th><th>Same (Synonym)</th><th>Opposite (Antonym)</th></tr></thead>
+              <tbody><!-- injected --></tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <footer>Built from your uploaded pages • SPA with hash routing • Works offline for content, audio uses external links</footer>
+  </div>
+
+  <script>
+  /*****************************************************************
+   * Hash routing: switch sections
+   *****************************************************************/
+  const navButtons = document.querySelectorAll('nav button[data-view]');
+  const sections = document.querySelectorAll('main section');
+  function showView(name, push=true){
+    sections.forEach(s => s.classList.toggle('active', s.id === name));
+    navButtons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    if(push) history.replaceState(null,'', '#' + name);
+    // focus heading for accessibility
+    const sec = document.getElementById(name);
+    if(sec) sec.querySelector('h2')?.focus?.();
+  }
+  navButtons.forEach(b=>{
+    b.addEventListener('click', ()=> showView(b.dataset.view));
+  });
+  // on load, check hash
+  const initial = location.hash ? location.hash.replace('#','') : 'dwords';
+  showView(initial, false);
+
+  /*****************************************************************
+   * 1) D-Words — preserve original functionality (chunks + speech)
+   *****************************************************************/
+  const chunks = [
+    [
+      ['Dad','a father.'],['Daily','happening every day.'],['Dance','to move rhythmically to music.'],
+      ['Dark','with little or no light.'],['Date','a day of the month or a romantic meeting.'],
+      ['Day','a 24-hour period or the time with sunlight.'],['Dead','no longer alive.'],['Deal','an agreement or arrangement.'],
+      ['Dear','loved or valued.'],['Deep','extending far down or inward.'],['Desk','a piece of furniture to write or work on.'],
+      ['Die','to stop living.'],['Dig','to break up and move earth.'],['Dog','a common four-legged pet animal.'],
+      ['Door','a movable barrier to enter or leave.'],['Down','towards a lower place.'],['Dry','not wet.'],['Duck','a water bird with a broad bill.'],
+      ['Dust','fine powdery dirt or particles.'],['Dumb','unable to speak or silent.'],['Dish','a plate or container for food.'],
+      ['Drop','a small amount of liquid.'],['Draw','to produce a picture or pull.'],['Done','completed.'],
+      ['Danger','possibility of harm.'],['Damage','harm that makes something less useful.'],['Decide','to make a choice.'],
+      ['Design','a plan or drawing for something.'],['Develop','to grow or improve.'],['Doctor','a person who treats sick people.']
+    ],
+    [
+      ['Dollar','a unit of money.'],['Domain','an area or field of activity.'],['Double','two times as much.'],
+      ['Dozen','a group of twelve.'],['Dragon','a large mythical reptile.'],['Drawer','a sliding box in furniture.'],
+      ['Dream','images or wishes in sleep or for the future.'],['Driver','a person who drives a vehicle.'],['Duty','a responsibility or task.'],
+      ['Durable','able to last a long time.'],['During','throughout the time of.'],['Dying','in the process of dying.'],
+      ['Dancer','someone who dances.'],['Deliver','to bring and hand over.'],['Dinner','the main meal of the day.'],
+      ['Divine','related to a god or very good.'],['Display','to show something for people to see.'],['Dislike','to not like.'],
+      ['Disagree','to have a different opinion.'],['Discuss','to talk about.'],['Discover','to find something new.'],
+      ['Distance','how far apart things are.'],['District','an area within a city or region.'],['Donate','to give to a cause.'],
+      ['Drowsy','sleepy.'],['Dusty','covered with dust.'],['Drama','a play or serious story.'],['Direct','straight or to send someone.'],
+      ['Delight','great pleasure or joy.'],['Disease','an illness.']
+    ],
+    [
+      ['Dynamic','energetic or changing.'],['Dangerously','in a way that may cause harm.'],['Daring','bravely risky.'],
+      ['Daughter','a female child.'],['Decimal','based on tens or a point value.'],['Density','how closely packed something is.'],
+      ['Diamond','a hard, precious stone.'],['Digital','using numbers or computers.'],['Difficult','not easy.'],
+      ['Disaster','a sudden terrible event.'],['Debacle','a complete failure or collapse.'],['Debris','scattered pieces after destruction.'],
+      ['Decipher','to decode or figure out.'],['Decline','to decrease or refuse.'],['Decompose','to break down.'],
+      ['Decree','an official order.'],['Deduce','to infer logically.'],['Deface','to spoil the appearance.'],
+      ['Default','failure to act or a preset option.'],['Defeatist','expecting to lose.'],['Defiant','resisting authority.'],
+      ['Deft','skillful and quick.'],['Deflect','to turn aside.'],['Deform','to change shape in a bad way.'],
+      ['Degenerate','to become worse.'],['Deity','a god or goddess.'],['Deliberate','done on purpose; careful.'],
+      ['Delineate','to describe or show clearly.'],['Delirious','very confused or excited.'],['Demolish','to destroy completely.']
+    ],
+    [
+      ['Denounce','to criticize publicly.'],['Deplete','to use up resources.'],['Deplore','to express strong disapproval.'],
+      ['Deprive','to take away something.'],['Derive','to get from a source.'],['Desolate','empty or lonely.'],
+      ['Destitute','extremely poor.'],['Detain','to keep in custody.'],['Detest','to hate strongly.'],['Detrimental','harmful.'],
+      ['Devastate','to destroy or ruin completely.'],['Deviate','to move away from a path.'],['Devout','deeply religious.'],
+      ['Dexterous','skillful with hands.'],['Dichotomy','a division into two parts.'],['Didactic','intended to teach.'],
+      ['Diffuse','to spread widely.'],['Diligent','hardworking and careful.'],['Diminish','to make smaller.'],
+      ['Disdain','contempt; lack of respect.'],['Disheveled','messy or untidy.'],['Disparage','to belittle.'],
+      ['Disseminate','to spread (ideas/information).'],['Dissipate','to scatter or disappear.'],['Dogmatic','stubbornly opinionated.'],
+      ['Debonair','confident, charming'],['Docile','easy to teach or manage'],['Dulcet','pleasant sounding']
+    ]
+  ];
+
+  const wordListEl = document.getElementById('wordList');
+  const pageSelect = document.getElementById('pageSelect');
+  const pageLabel = document.getElementById('pageLabel');
+  let current = 0;
+
+  // build page select
+  for(let i=0;i<chunks.length;i++){
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Part ${i+1} — words ${i*30+1} to ${Math.min((i+1)*30,125)}`;
+    pageSelect.appendChild(opt);
+  }
+
+  function escapeForAttr(s){ return s.replace(/'/g, "\\'").replace(/"/g,'&quot;'); }
+
+  function renderPage(idx){
+    current = idx;
+    wordListEl.innerHTML = '';
+    const data = chunks[idx];
+    data.forEach(([w,m])=>{
+      const li = document.createElement('li');
+      li.className = 'card';
+      li.innerHTML = `<button class="sound" aria-label="Play ${w}" onclick="speak('${escapeForAttr(w)}')">🔊</button>
+                      <div><strong>${w}</strong><div class="muted">${m}</div></div>`;
+      wordListEl.appendChild(li);
+    });
+    pageSelect.value = idx;
+    pageLabel.textContent = `Part ${idx+1} of ${chunks.length}`;
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', ()=> { if(current>0) renderPage(current-1); });
+  document.getElementById('nextBtn').addEventListener('click', ()=> { if(current<chunks.length-1) renderPage(current+1); });
+  pageSelect.addEventListener('change', (e)=> renderPage(Number(e.target.value)));
+
+  // speech functions (global so inline handlers work)
+  window.speak = function(text){
+    if(!window.speechSynthesis){ alert('Your browser does not support speech synthesis.'); return; }
+    const utter = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    if(voices && voices.length) utter.voice = voices.find(v=>/en-/.test(v.lang)) || voices[0];
+    utter.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  };
+
+  let playAllInterval = null;
+  document.getElementById('playAll').addEventListener('click', ()=>{
+    const list = chunks[current].map(x=>x[0]);
+    let i=0; window.speechSynthesis.cancel();
+    playAllInterval = setInterval(()=>{
+      if(i>=list.length){ clearInterval(playAllInterval); playAllInterval=null; return; }
+      window.speak(list[i]); i++;
+    },900);
+  });
+  document.getElementById('stopAll').addEventListener('click', ()=> { window.speechSynthesis.cancel(); if(playAllInterval){ clearInterval(playAllInterval); playAllInterval=null; } });
+
+  renderPage(0);
+
+  /*****************************************************************
+   * 2) Table: meaning_start_with_p.html content
+   *****************************************************************/
+  const tablePData = [
+    ['Bucket','Container for carrying liquids','Pail / Pan','Container'],
+    ['Trousers','Clothing worn on legs','Pants','Bottoms'],
+    ['Maybe','Possibly','Perhaps','Possibly'],
+    ['Forgive','To pardon','Pardon','Excuse'],
+    ['Separate','To divide','Part','Split'],
+    ['Likely','Probable','Probable / Possibly','Expected'],
+    ['Annoy','To irritate','Pester','Disturb'],
+    ['Good-looking','Attractive','Pretty','Beautiful'],
+    ['Picture','Image','Photograph / Painting','Image'],
+    ['Choose','To pick or select','Pick','Select'],
+    ['Ugly','Not beautiful','Plain','Unattractive'],
+    ['Go','Move from one place to another','Proceed','Move'],
+    ['Dish','Flat container for food','Plate / Platter','Utensil'],
+    ['Location','Place or position','Place','Spot'],
+    ['Stone','Hard mineral material','Pebble','Rock'],
+    ['Inactive','Not active','Passive','Idle'],
+    ['Fussy','Hard to please','Particular / Picky','Choosy'],
+    ['Suffering','Pain or distress','Pain','Agony'],
+    ['Castle','Large building for defense','Palace','Fort'],
+    ['Gasp','Quick breath from shock','Pant / Puff','Breathe hard'],
+    ['Fear','Feeling of being afraid','Panic','Terror'],
+    ['Twosome','Pair of two people','Pair','Couple'],
+    ['Artist','Person who creates art','Painter','Creator'],
+    ['Sheet','Flat piece of material or paper','Page','Leaf'],
+    ['Collection','Group of things','Pack','Set']
+  ];
+  const tbodyP = document.querySelector('#tableP tbody');
+  function renderTable(tbody, data){
+    tbody.innerHTML = '';
+    data.forEach(row=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = row.map(c=>`<td>${c}</td>`).join('');
+      tbody.appendChild(tr);
+    });
+  }
+  renderTable(tbodyP, tablePData);
+
+  // search for table P
+  document.getElementById('searchP').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    if(!q) return renderTable(tbodyP, tablePData);
+    const filtered = tablePData.filter(r => r.join(' ').toLowerCase().includes(q));
+    renderTable(tbodyP, filtered);
+  });
+
+  /*****************************************************************
+   * 3) Opposite table (starts with G)
+   *****************************************************************/
+  const tableGData = [
+    ['Lose','To fail to keep or win','Gain / Get / Garner / Grab / Glean / Grasp / Grip','Obtain'],
+    ['Midget','Very small person','Giant / Gigantic','Huge'],
+    ['Special','Different from usual','General','Common'],
+    ['Lady','Woman','Gentleman','Man'],
+    ['Take','To receive','Give','Provide'],
+    ['Moron','Foolish person','Genius','Intelligent'],
+    ['Sad','Unhappy','Glad / Gleeful','Joyful'],
+    ['Boy','Male child','Girl','Female child'],
+    ['Happy','Feeling pleasure','Gloomy / Glum / Grim / Grieved / Grumpy','Sad'],
+    ['Plain','Simple, not fancy','Grand / Grandiose','Beautiful'],
+    ['Hello','Greeting','Goodbye','Farewell'],
+    ['Here','In this place','Gone','Away'],
+    ['Bad','Not good','Good','Excellent'],
+    ['Ugly','Not beautiful','Good-looking','Attractive'],
+    ['Stingy','Not generous','Generous / Giving','Kind'],
+    ['Awkward','Clumsy or uncomfortable','Graceful','Elegant'],
+    ['Little','Small in size','Great / Giant / Gigantic','Big'],
+    ['Rough','Not smooth','Gentle','Smooth'],
+    ['Bride','Woman getting married','Groom','Husband-to-be'],
+    ['Ripe','Fully grown or mature','Green','Unripe'],
+    ['Unwanting','Not lacking','Greedy / Grasping','Needy'],
+    ['Unprotected','Without safety','Guarded','Safe'],
+    ['Experienced','Skilled or knowledgeable','Green','New'],
+    ['Scarcity','Shortage','Glut / Gobs','Plenty'],
+    ['Unappreciative','Not thankful','Grateful','Thankful']
+  ];
+  const tbodyG = document.querySelector('#tableG tbody');
+  renderTable(tbodyG, tableGData);
+
+  document.getElementById('searchG').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    if(!q) return renderTable(tbodyG, tableGData);
+    renderTable(tbodyG, tableGData.filter(r=>r.join(' ').toLowerCase().includes(q)));
+  });
+
+  /*****************************************************************
+   * 4) Vocabulary Pronunciation list (keeps audio playback)
+   *****************************************************************/
+  const pronList = [
+['Disheveled','https://ssl.gstatic.com/dictionary/static/sounds/20200429/disheveled--_us_1.mp3','untidy or messy.','His disheveled hair showed he had just woken up.'],
+['Baffling','https://ssl.gstatic.com/dictionary/static/sounds/20200429/baffling--_us_1.mp3','confusing or puzzling.','The detective found the clues quite baffling.'],
+['Lenient','https://ssl.gstatic.com/dictionary/static/sounds/20200429/lenient--_us_1.mp3','not strict; forgiving.','The teacher was lenient with late homework submissions.'],
+['Repulsive','https://ssl.gstatic.com/dictionary/static/sounds/20200429/repulsive--_us_1.mp3','disgusting; causing dislike.','The smell from the garbage was repulsive.'],
+['Audacious','https://ssl.gstatic.com/dictionary/static/sounds/20200429/audacious--_us_1.mp3','bold; daring.','His audacious plan surprised everyone.'],
+['Parry','https://ssl.gstatic.com/dictionary/static/sounds/20200429/parry--_us_1.mp3','to block or ward off.','The boxer managed to parry his opponent’s punch.'],
+['Prevalent','https://ssl.gstatic.com/dictionary/static/sounds/20200429/prevalent--_us_1.mp3','common; widespread.','Smartphones are prevalent among teenagers today.'],
+['Ominous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/ominous--_us_1.mp3','threatening or showing signs of danger.','Dark clouds gave an ominous feeling before the storm.'],
+['Incredible','https://ssl.gstatic.com/dictionary/static/sounds/20200429/incredible--_us_1.mp3','unbelievable or amazing.','The magician’s trick was absolutely incredible.'],
+['Ophthalmologist','https://media.merriam-webster.com/audio/prons/en/us/mp3/o/ophtha03.mp3','eye doctor.','She visited an ophthalmologist for her vision check-up.'],
+['Supersede','https://ssl.gstatic.com/dictionary/static/sounds/20200429/supersede--_us_1.mp3','to replace or take the place of.','Electric cars may supersede petrol cars in the future.'],
+['Anonymous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/anonymous--_us_1.mp3','unnamed or unknown.','The donation came from an anonymous person.'],
+['Autopsy','https://ssl.gstatic.com/dictionary/static/sounds/20200429/autopsy--_us_1.mp3','examination of a dead body.','The autopsy revealed the cause of death.'],
+['Indefatigable','https://ssl.gstatic.com/dictionary/static/sounds/20200429/indefatigable--_us_1.mp3','tireless.','She is an indefatigable worker who never gives up.'],
+['Atheist','https://ssl.gstatic.com/dictionary/static/sounds/20200429/atheist--_us_1.mp3','a person who doesn’t believe in God.','He identified himself as an atheist.'],
+['Loquacity','https://media.merriam-webster.com/audio/prons/en/us/mp3/l/loquac02.mp3','talkativeness.','Her loquacity made her popular at parties.'],
+['Glib','https://ssl.gstatic.com/dictionary/static/sounds/20200429/glib--_us_1.mp3','smooth but insincere.','He gave a glib answer to avoid the real question.'],
+['Incorrigible','https://ssl.gstatic.com/dictionary/static/sounds/20200429/incorrigible--_us_1.mp3','cannot be corrected.','He’s an incorrigible prankster.'],
+['Ocular','https://media.merriam-webster.com/audio/prons/en/us/mp3/o/ocular01.mp3','related to the eyes.','The disease caused ocular problems.'],
+['Demagogue','https://ssl.gstatic.com/dictionary/static/sounds/20200429/demagogue--_us_1.mp3','a leader who stirs up people’s emotions.','The demagogue gave fiery speeches to gain support.'],
+['Naïve','https://ssl.gstatic.com/dictionary/static/sounds/20200429/naive--_us_1.mp3','innocent or inexperienced.','The child was too naïve to understand the trick.'],
+['Affluence','https://ssl.gstatic.com/dictionary/static/sounds/20200429/affluence--_us_1.mp3','wealth.','He lived a life of affluence and luxury.'],
+['Retrospect','https://ssl.gstatic.com/dictionary/static/sounds/20200429/retrospect--_us_1.mp3','looking back at the past.','In retrospect, I should have studied harder.'],
+['Gourmet','https://ssl.gstatic.com/dictionary/static/sounds/20200429/gourmet--_us_1.mp3','expert in fine food.','She prepared a gourmet meal for her guests.'],
+['Simulate','https://ssl.gstatic.com/dictionary/static/sounds/20200429/simulate--_us_1.mp3','to imitate or pretend.','The game simulates real driving experience.'],
+['Magnanimous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/magnanimous--_us_1.mp3','generous.','He was magnanimous in victory, praising his opponent.'],
+['Clandestine','https://ssl.gstatic.com/dictionary/static/sounds/20200429/clandestine--_us_1.mp3','secret or hidden.','They held a clandestine meeting in the park.'],
+['Apathetic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/apathetic--_us_1.mp3','showing no interest.','Many people are apathetic about politics.'],
+['Placate','https://ssl.gstatic.com/dictionary/static/sounds/20200429/placate--_us_1.mp3','to calm someone down.','The manager placated the angry customer.'],
+['Vacillate','https://ssl.gstatic.com/dictionary/static/sounds/20200429/vacillate--_us_1.mp3','to waver or be indecisive.','She vacillated between two job offers.'],
+['Nostalgic','https://www.oxfordlearnersdictionaries.com/media/english/us_pron/n/nos/nosta/nostalgic__us_1.mp3','longing for the past.','Looking at old photos made him nostalgic.'],
+['Antipathy','https://ssl.gstatic.com/dictionary/static/sounds/20200429/antipathy--_us_1.mp3','strong dislike.','She felt a deep antipathy toward liars.'],
+['Circumspect','https://ssl.gstatic.com/dictionary/static/sounds/20200429/circumspect--_us_1.mp3','cautious.','Investors were circumspect about new startups.'],
+['Intrepid','https://ssl.gstatic.com/dictionary/static/sounds/20200429/intrepid--_us_1.mp3','fearless.','The intrepid explorer climbed the tallest mountain.'],
+['Diaphanous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/diaphanous--_us_1.mp3','light and sheer.','She wore a diaphanous scarf around her shoulders.'],
+['Taciturn','https://ssl.gstatic.com/dictionary/static/sounds/20200429/taciturn--_us_1.mp3','quiet and reserved.','The taciturn guard rarely spoke.'],
+['Malign','https://ssl.gstatic.com/dictionary/static/sounds/20200429/malign--_us_1.mp3','to speak ill of.','He was unfairly maligned by the press.'],
+['Congenital','https://media.merriam-webster.com/audio/prons/en/us/mp3/c/congen09.mp3','present from birth.','He was born with a congenital heart defect.'],
+['Neurosis','https://www.oxfordlearnersdictionaries.com/media/english/us_pron/n/neu/neuro/neurosis__us_1.mp3','mental stress disorder.','Her constant worrying was a sign of neurosis.'],
+['Unequivocal','https://ssl.gstatic.com/dictionary/static/sounds/20200429/unequivocal--_us_1.mp3','clear and definite.','He gave an unequivocal yes to the offer.'],
+['Vicarious','https://ssl.gstatic.com/dictionary/static/sounds/20200429/vicarious--_us_1.mp3','experienced through another.','She felt vicarious joy watching her son win.'],
+['Psychogenic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/psychogenic--_us_1.mp3','originating in the mind.','His stomach pain was psychogenic, not physical.'],
+['Anachronous','https://dictionary.cambridge.org/media/english/uk_pron/c/cdo/cdo07/cdo0725ukanac0185.mp3','from another time.','A typewriter in an office today seems anachronous.'],
+['Iconoclastic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/iconoclastic--_us_1.mp3','challenging tradition.','The artist’s iconoclastic style shocked critics.'],
+['Tyro','https://ssl.gstatic.com/dictionary/static/sounds/20200429/tyro--_us_1.mp3','beginner.','The tyro photographer captured some nice shots.'],
+['Laconic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/laconic--_us_1.mp3','brief; using few words.','His laconic reply ended the conversation.'],
+['Semantic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/semantic--_us_1.mp3','relating to meaning of words.','There was a semantic difference between the two terms.'],
+['Cavalier','https://www.oxfordlearnersdictionaries.com/media/english/us_pron/c/cav/caval/cavalier__us_1.mp3','arrogant or dismissive.','He gave a cavalier response to the serious issue.'],
+['Anomalous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/anomalous--_us_1.mp3','unusual.','The scientist noticed an anomalous result in the data.'],
+['Posthumous','https://ssl.gstatic.com/dictionary/static/sounds/20200429/posthumous--_us_1.mp3','after death.','The author received a posthumous award.'],
+['Enervated','https://www.oxfordlearnersdictionaries.com/media/english/us_pron/e/ene/enerv/enervated__us_1.mp3','drained of energy.','After the marathon, he felt completely enervated.'],
+['Perspicacity','https://ssl.gstatic.com/dictionary/static/sounds/20200429/perspicacity--_us_1.mp3','sharp insight.','Her perspicacity helped solve the case.'],
+['Martinet','https://ssl.gstatic.com/dictionary/static/sounds/20200429/martinet--_us_1.mp3','strict disciplinarian.','The coach was a martinet about punctuality.'],
+['Gregarious','https://ssl.gstatic.com/dictionary/static/sounds/20200429/gregarious--_us_1.mp3','sociable; enjoys being around others.','He is a gregarious host who loves entertaining guests.'],
+['Phlegmatic','https://ssl.gstatic.com/dictionary/static/sounds/20200429/phlegmatic--_us_1.mp3','calm and unemotional.','Even in crisis, she remained phlegmatic and composed.'],
+['Inveterate','https://ssl.gstatic.com/dictionary/static/sounds/20200429/inveterate--_us_1.mp3','having a long-established habit.','He is an inveterate smoker who refuses to quit.'],
+['Egregious','https://ssl.gstatic.com/dictionary/static/sounds/20200429/egregious--_us_1.mp3','outstandingly bad.','The company’s egregious mistake led to customer outrage.'],
+['Cacophony','https://ssl.gstatic.com/dictionary/static/sounds/20200429/cacophony--_us_1.mp3','harsh mixture of sounds.','The cacophony of traffic made it hard to think.'],
+['Prurient','https://ssl.gstatic.com/dictionary/static/sounds/20200429/prurient--_us_1.mp3','having an excessive interest in sexual matters.','The film was criticized for its prurient scenes.'],
+['Uxorious','https://ssl.gstatic.com/dictionary/static/sounds/20200429/uxorious--_us_1.mp3','excessively devoted to one’s wife.','His uxorious nature made him constantly praise his wife in public.']
+  ];
+
+  const pronListEl = document.getElementById('pronList');
+  pronList.forEach(([word,url,meaning,example],i)=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<b>${word}</b> <button class="btn" onclick="playAudio(${i})" aria-label="Play ${word}">🔊</button> — ${meaning}<br><i>${example}</i>`;
+    pronListEl.appendChild(li);
+  });
+
+  window.playAudio = function(index){
+    const url = pronList[index][1];
+    if(!url){ alert('No audio link'); return; }
+    const a = new Audio(url);
+    a.play().catch(()=>alert('Audio playback blocked — user gesture required in some browsers.'));
+  };
+
+  /*****************************************************************
+   * 5) Same_meaningAndOpposite table
+   *****************************************************************/
+  const tableSData = [
+['Sweet','Pleasant in taste','Pleasant','Sour'],
+['Crazy','Mentally unsound or wild','Insane','Sane'],
+['Stout','Fat and strong','Fat','Thin'],
+['Big','Large in size','Huge','Small'],
+['Danger','Possibility of harm','Peril','Safety'],
+['Help','To assist','Aid','Hinder'],
+['Splendid','Very beautiful or impressive','Magnificent','Ordinary'],
+['Love','Strong affection','Affection','Hate'],
+['Stand','To be upright','Rise','Sit'],
+['Furious','Extremely angry','Violent','Calm'],
+['Tree','A tall plant with trunk and leaves','Plant','Bush'],
+['Doubtful','Not sure','Uncertain','Certain'],
+['Handsome','Good looking','Attractive','Ugly'],
+['Begin','To start something','Start','End'],
+['Strange','Unusual','Unfamiliar','Familiar'],
+['Male','Man or boy','Masculine','Female'],
+['Powerful','Having strength','Strong','Weak'],
+['Beyond','Farther than','After','Within'],
+['Live','To be alive','Exist','Die'],
+['Go','To move from one place to another','Leave','Stay'],
+['Return','Come back','Revert','Depart'],
+['Growl','Low sound made in anger (animal)','Snarl','Weep'],
+['Open','Not closed','Unlocked','Close'],
+['Nest','Home of a bird','Home','Outside'],
+['Chair','Seat for one person','Seat','Table'],
+['Want','To desire something','Desire','Reject'],
+['Can','To be able to do','Be capable','Cannot'],
+['Idle','Not working','Inactive','Working'],
+['Rich','Having a lot of money','Wealthy','Poor'],
+['Building','A structure with roof and walls','Structure','Demolition']
+  ];
+  const tbodyS = document.querySelector('#tableS tbody');
+  renderTable(tbodyS, tableSData);
+  document.getElementById('searchS').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    if(!q) return renderTable(tbodyS, tableSData);
+    renderTable(tbodyS, tableSData.filter(r=>r.join(' ').toLowerCase().includes(q)));
+  });
+
+  /*****************************************************************
+   * Keep routing in sync if user changes hash manually
+   *****************************************************************/
+  window.addEventListener('hashchange', ()=> {
+    const name = location.hash.replace('#','') || 'dwords';
+    showView(name, false);
+  });
+
+  </script>
+</body>
+</html>
